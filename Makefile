@@ -16,4 +16,7 @@ rollback:
 rollback_all:
 	migrate -path db/migrations -database "postgresql://root:secret@localhost:5432/fingo?sslmode=disable" -verbose down
 
-.PHONY: postgres createdb dropdb migrate rollback rollback_all
+sqlc:
+	sqlc generate
+
+.PHONY: postgres createdb dropdb migrate rollback rollback_all sqlc

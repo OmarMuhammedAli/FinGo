@@ -14,7 +14,7 @@ SELECT * FROM transfers
 WHERE id = $1
 LIMIT 1;
 
--- name: ListTransfersFromAccount :many
+-- name: ListTransfers :many
 SELECT * FROM transfers
 WHERE (from_account_id = $1 AND to_account_id = $2)
 OR (from_account_id = $1 OR to_account_id = $2)

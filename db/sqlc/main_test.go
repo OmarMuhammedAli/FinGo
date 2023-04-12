@@ -13,7 +13,7 @@ var testQueries *Queries
 
 const (
 	dbDriver = "postgres"
-	dbSource = "postgresql://root:secret@localhost:5432/fingo?sslmode=disable"
+	dbSource = "postgresql://root:secret@localhost:5432/fingo-test?sslmode=disable"
 )
 
 func TestMain(m *testing.M) {

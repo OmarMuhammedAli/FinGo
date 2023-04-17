@@ -8,7 +8,9 @@ import (
 
 // Store provides all functions to execute db queries and transactions
 type Store struct {
+	// Composition of the Queries struct to perform singular queries within a tx.
 	*Queries
+	// Essential for starting new DB transactions
 	db *sql.DB
 }
 
@@ -20,16 +22,20 @@ func NewStore(db *sql.DB) *Store {
 	}
 }
 
-// Executes a function within a transaction
+// Executes a function within a transaction.
 func (s *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+	// 1. Start the transaction using the Store's db field.
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil
 	}
 
+	// Create a new query instance with the reference to the tx. This way, all queries
+	// run using this instance will be run within the same tx.
 	q := New(tx)
 	err = fn(q)
 
+	// Rollback or Commit tx.
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			return fmt.Errorf("tx err: %v, rbErr: %v", err, rbErr)
@@ -84,11 +90,11 @@ func (s *Store) TransferTx(ctx context.Context, args TransferTxParams) (Transfer
 		}
 
 		// 2. Create a transfer record
-		transferParams := TransferTxParams(CreateTransferParams{
+		transferParams := TransferTxParams{
 			FromAccountID: args.FromAccountID,
 			ToAccountID:   args.ToAccountID,
 			Amount:        args.Amount,
-		})
+		}
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams(transferParams))
 		if err != nil {
 			return err

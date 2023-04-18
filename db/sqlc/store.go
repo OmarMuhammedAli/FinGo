@@ -60,6 +60,9 @@ type TransferTxResults struct {
 	ToEntry     Entry    `json:"to_entry"`
 }
 
+// transaction key to add to a context to hold a value of the transaction name.
+// var txKey = struct{}{}
+
 // TransferTx performs a money transfer from one account to another.
 // 1. Create account entries records
 // 2. Create a transfer record
@@ -71,6 +74,8 @@ func (s *Store) TransferTx(ctx context.Context, args TransferTxParams) (Transfer
 	// Execute all steps within the same transaction
 	err := s.execTx(ctx, func(q *Queries) error {
 		var err error
+
+		// txName := ctx.Value(txKey).(string)
 
 		// 1. Create account entries
 		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
@@ -101,6 +106,24 @@ func (s *Store) TransferTx(ctx context.Context, args TransferTxParams) (Transfer
 		}
 
 		// 3. TODO: Update both accounts' balances
+		// a. Retrieve From Account from which the amount will be deducted
+
+		result.FromAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+			ID:     args.FromAccountID,
+			Amount: -args.Amount,
+		})
+		if err != nil {
+			return err
+		}
+
+		// b. Retrieve ToAccount to which the amount will be added.
+		result.ToAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+			ID:     args.ToAccountID,
+			Amount: args.Amount,
+		})
+		if err != nil {
+			return err
+		}
 		return err
 	})
 

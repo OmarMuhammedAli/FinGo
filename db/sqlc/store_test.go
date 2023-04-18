@@ -10,14 +10,17 @@ import (
 
 func TestTransferTx(t *testing.T) {
 	// Create a Store instance to run the transaction
+
+	// NOTE: For running individual queries, both testQueries and s variables are
+	// interchangeable, as they both use the same testDb reference variable.
 	s := NewStore(testDb)
 
 	// Create 2 dummy accounts to complete the transfers between them.
 	fa := createRandAccount(t)
 	ta := createRandAccount(t)
-	fmt.Printf(">> Before tx - fa: %v, ta: %v", fa.Balance, ta.Balance)
+	fmt.Printf(">> Before tx - fa: %v, ta: %v\n", fa.Balance, ta.Balance)
 	// run n concurrent transactions in separate goroutines
-	n := 5
+	n := 20
 	amount := int64(10)
 
 	// Create errors and results channels to record err and result of each running
@@ -27,8 +30,10 @@ func TestTransferTx(t *testing.T) {
 	rs := make(chan TransferTxResults)
 
 	for i := 0; i < n; i++ {
+		// tn := fmt.Sprintf("tx %v", i+1)
 		go func() {
-			result, err := s.TransferTx(context.Background(), TransferTxParams{
+			ctx := context.Background()
+			result, err := s.TransferTx(ctx, TransferTxParams{
 				FromAccountID: fa.ID,
 				ToAccountID:   ta.ID,
 				Amount:        amount,
@@ -96,6 +101,7 @@ func TestTransferTx(t *testing.T) {
 		require.Equal(t, toAccount.ID, ta.ID)
 
 		// Check difference between accounts
+		fmt.Printf(">> tx - fa: %v, ta: %v\n", fromAccount.Balance, toAccount.Balance)
 		fromDiff := fa.Balance - fromAccount.Balance
 		toDiff := toAccount.Balance - ta.Balance
 
@@ -114,7 +120,7 @@ func TestTransferTx(t *testing.T) {
 	updatedToAccount, err := testQueries.GetAccount(context.Background(), ta.ID)
 	require.NoError(t, err)
 
-	fmt.Printf(">> After tx - updatedFromAccount: %v, updatedToAccount: %v", updatedFromAccount.Balance, updatedToAccount.Balance)
+	fmt.Printf(">> After tx - updatedFromAccount: %v, updatedToAccount: %v\n", updatedFromAccount.Balance, updatedToAccount.Balance)
 	require.Equal(t, fa.Balance-int64(n)*amount, updatedFromAccount.Balance)
 	require.Equal(t, ta.Balance+int64(n)*amount, updatedToAccount.Balance)
 }

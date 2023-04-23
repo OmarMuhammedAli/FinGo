@@ -124,3 +124,58 @@ func TestTransferTx(t *testing.T) {
 	require.Equal(t, fa.Balance-int64(n)*amount, updatedFromAccount.Balance)
 	require.Equal(t, ta.Balance+int64(n)*amount, updatedToAccount.Balance)
 }
+
+func TestTransferTxDeadlock(t *testing.T) {
+	// Create a Store instance to run the transaction
+
+	// NOTE: For running individual queries, both testQueries and s variables are
+	// interchangeable, as they both use the same testDb reference variable.
+	s := NewStore(testDb)
+
+	// Create 2 dummy accounts to complete the transfers between them.
+	fa := createRandAccount(t)
+	ta := createRandAccount(t)
+	fmt.Printf(">> Before tx - fa: %v, ta: %v\n", fa.Balance, ta.Balance)
+	// run n concurrent transactions in separate goroutines
+	n := 20
+	amount := int64(10)
+
+	// Create errors and results channels to record err and result of each running
+	// goroutine.
+
+	es := make(chan error)
+
+	for i := 0; i < n; i++ {
+
+		faID := fa.ID
+		taID := ta.ID
+
+		if i%2 == 1 {
+			faID = ta.ID
+			taID = fa.ID
+		}
+		go func() {
+			ctx := context.Background()
+			_, err := s.TransferTx(ctx, TransferTxParams{
+				FromAccountID: faID,
+				ToAccountID:   taID,
+				Amount:        amount,
+			})
+			es <- err
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		err := <-es
+		require.NoError(t, err)
+	}
+	updatedFromAccount, err := testQueries.GetAccount(context.Background(), fa.ID)
+	require.NoError(t, err)
+
+	updatedToAccount, err := testQueries.GetAccount(context.Background(), ta.ID)
+	require.NoError(t, err)
+
+	fmt.Printf(">> After tx - updatedFromAccount: %v, updatedToAccount: %v\n", updatedFromAccount.Balance, updatedToAccount.Balance)
+	require.Equal(t, fa.Balance, updatedFromAccount.Balance)
+	require.Equal(t, ta.Balance, updatedToAccount.Balance)
+}

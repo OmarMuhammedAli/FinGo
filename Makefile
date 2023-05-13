@@ -34,4 +34,7 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb createdb-test dropdb migrate rollback rollback_all migrate-test rollback-test rollback_all-test sqlc test
+server:
+	go run main.go
+
+.PHONY: postgres createdb createdb-test dropdb migrate rollback rollback_all migrate-test rollback-test rollback_all-test sqlc test server

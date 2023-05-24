@@ -35,6 +35,9 @@ test:
 	go test -v -cover ./...
 
 server:
-	gin --all -a 8080 run main.go
+	export ENV=dev && gin --all -a 8080 run main.go
+
+server-test:
+	export ENV=test && gin --all -a 8080 run main.go
 
 .PHONY: postgres createdb createdb-test dropdb migrate rollback rollback_all migrate-test rollback-test rollback_all-test sqlc test server
